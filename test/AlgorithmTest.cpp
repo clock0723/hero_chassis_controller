@@ -1,68 +1,33 @@
-#include "ros_package_template/Algorithm.hpp"
-
-// gtest
 #include <gtest/gtest.h>
 
-// STD
-#include <vector>
+#include "ros_package_template/algorithm.hpp"
 
-#include <Eigen/Core>
+using namespace hero_chassis_controller;
 
-using namespace ros_package_template;
+TEST(Algorithm, calculateWheelVelocities) {
+  Algorithm algorithm;
+  algorithm.setWhellDate(0.07625, 0.4, 0.4);
+  const ChassisVelocity chassis_velocity{0.3, -0.1, 0.5};
 
-TEST(Algorithm, getWithoutSet
-) {
-Algorithm algorithm;
-const double average = algorithm.getAverage();
-EXPECT_EQ(0.0, average);
+  const WheelVelocity wheel_velocities =
+      algorithm.calculateWheelVelocities(chassis_velocity);
+
+  EXPECT_NEAR(0.2 / 0.07625, wheel_velocities.left_front, 1e-10);
+  EXPECT_NEAR(0.4 / 0.07625, wheel_velocities.right_front, 1e-10);
+  EXPECT_NEAR(0.0, wheel_velocities.left_back, 1e-10);
+  EXPECT_NEAR(0.6 / 0.07625, wheel_velocities.right_back, 1e-10);
 }
 
-TEST(Algorithm, singleDataPoint
-) {
-const double inputData = 100.0 * (double) rand() / RAND_MAX;
-Algorithm algorithm;
-algorithm.
-addData(inputData);
-const double average = algorithm.getAverage();
-EXPECT_NEAR(inputData, average,
-1e-10);
-}
+TEST(Algorithm, calculateVelocityError) {
+  Algorithm algorithm;
+  const WheelVelocity target_velocity{5.0, 6.0, 7.0, 8.0};
+  const WheelVelocity current_velocity{1.0, 2.0, 3.0, 4.0};
 
-TEST(Algorithm, singleDataVector
-) {
-const double inputValue = 100.0 * (double) rand() / RAND_MAX;
-Algorithm algorithm;
-Eigen::VectorXd inputData;
-inputData.resize(2);
-inputData << inputValue, 3 *
-inputValue;
-algorithm.
-addData(inputData);
-const double average = algorithm.getAverage();
-EXPECT_NEAR(2 * inputValue, average, 1e-10);
-}
+  const WheelVelocity velocity_error =
+      algorithm.calculateVelocityError(target_velocity, current_velocity);
 
-TEST(Algorithm, multipleDataPoints
-) {
-size_t nMeasurements = 100;
-std::vector<double> inputData(nMeasurements);
-double sum = 0.0;
-for (
-auto &data
-: inputData) {
-data = 100.0 * (double) rand() / RAND_MAX;
-sum +=
-data;
-}
-
-Algorithm algorithm;
-for (
-const auto data
-: inputData) {
-algorithm.
-addData(data);
-}
-const double average = algorithm.getAverage();
-EXPECT_NEAR(sum
-/ nMeasurements, average, 1e-10);
+  EXPECT_DOUBLE_EQ(4.0, velocity_error.left_front);
+  EXPECT_DOUBLE_EQ(4.0, velocity_error.right_front);
+  EXPECT_DOUBLE_EQ(4.0, velocity_error.left_back);
+  EXPECT_DOUBLE_EQ(4.0, velocity_error.right_back);
 }

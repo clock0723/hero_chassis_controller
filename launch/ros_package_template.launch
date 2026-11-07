@@ -1,8 +1,17 @@
 <launch>
+  <arg name="paused" default="false"/>
+  <arg name="roller_type" default="realistic"/>
 
-  <!-- Launch ROS Package Template Node -->
-  <node pkg="ros_package_template" type="ros_package_template" name="ros_package_template" output="screen">
-    <rosparam command="load" file="$(dirname)/../config/default.yaml"/>
-  </node>
+  <include file="$(find rm_description_for_task)/launch/hero.launch">
+    <arg name="load_chassis" value="true"/>
+    <arg name="roller_type" value="$(arg roller_type)"/>
+    <arg name="paused" value="$(arg paused)"/>
+  </include>
 
+  <rosparam command="load" file="$(find hero_chassis_controller)/config/default.yaml"/>
+
+  <node name="controller_spawner" pkg="controller_manager" type="spawner"
+        respawn="false" output="screen"
+        args="controller/hero_chassis_controller
+              controller/joint_state_controller"/>
 </launch>
