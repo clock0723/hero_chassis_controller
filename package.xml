@@ -2,19 +2,18 @@
 <package format="2">
   <name>ros_package_template</name>
   <version>0.1.0</version>
-  <description>A template for ROS packages.</description>
+  <description>ROS controller plugin for the hero chassis.</description>
   <maintainer email="liaoqiayuan@gmail.com">Qiayuan Liao</maintainer>
   <license>BSD</license>
   <author email="liaoqiayuan@gmail.com">Qiayuan Liao</author>
 
   <!-- buildtool_depend: dependencies of the build process -->
   <buildtool_depend>catkin</buildtool_depend>
-  <!-- build_depend: dependencies only used in source files -->
-  <build_depend>boost</build_depend>
-  <!-- depend: build, export, and execution dependency -->
-  <depend>eigen</depend>
+  <!-- Dependencies required to build and use the controller plugin. -->
+  <depend>controller_interface</depend>
+  <depend>hardware_interface</depend>
+  <depend>pluginlib</depend>
   <depend>roscpp</depend>
-  <depend>sensor_msgs</depend>
 
   <build_depend>roslint</build_depend>
 </package>
