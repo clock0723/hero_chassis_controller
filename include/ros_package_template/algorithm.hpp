@@ -11,6 +11,12 @@ struct ChassisVelocity {
   double raw;
 };
 
+struct ChassisPose {
+  double x;
+  double y;
+  double yaw;
+};
+
 struct WheelVelocity {
   double left_front;
   double right_front;
@@ -27,6 +33,10 @@ class Algorithm {
                     double half_distance_y);
   WheelVelocity calculateWheelVelocities(
       const ChassisVelocity& chassis_velocity) const;
+  ChassisVelocity calculateChassisVelocity(
+      const WheelVelocity& wheel_velocities) const;
+  ChassisPose calculateOdometry(const ChassisVelocity& velocity,
+                                const ChassisPose& pose, double dt) const;
   WheelVelocity calculateVelocityError(
       const WheelVelocity& target_velocity,
       const WheelVelocity& current_velocity) const;

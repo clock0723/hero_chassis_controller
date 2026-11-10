@@ -1,5 +1,7 @@
 #include "ros_package_template/algorithm.hpp"
 
+#include <cmath>
+
 namespace hero_chassis_controller {
 
 void Algorithm::setWhellDate(double wheel_r, double half_distance_x,
@@ -24,6 +26,38 @@ WheelVelocity Algorithm::calculateWheelVelocities(
           (chassis_velocity.velocity_x - chassis_velocity.velocity_y +
            turn_radius * chassis_velocity.raw) /
               wheel_r_};
+}
+
+ChassisVelocity Algorithm::calculateChassisVelocity(
+    const WheelVelocity& wheel_velocities) const {
+  const double turn_radius = (half_distance_x_ + half_distance_y_) / 2.0;
+  return {wheel_r_ * (wheel_velocities.left_front +
+                      wheel_velocities.right_front +
+                      wheel_velocities.left_back +
+                      wheel_velocities.right_back) /
+              4.0,
+          wheel_r_ * (-wheel_velocities.left_front +
+                      wheel_velocities.right_front +
+                      wheel_velocities.left_back -
+                      wheel_velocities.right_back) /
+              4.0,
+          wheel_r_ * (-wheel_velocities.left_front +
+                      wheel_velocities.right_front -
+                      wheel_velocities.left_back +
+                      wheel_velocities.right_back) /
+              (4.0 * turn_radius)};
+}
+
+ChassisPose Algorithm::calculateOdometry(const ChassisVelocity& velocity,
+                                         const ChassisPose& pose,
+                                         double dt) const {
+  return {pose.x + (velocity.velocity_x * std::cos(pose.yaw) -
+                    velocity.velocity_y * std::sin(pose.yaw)) *
+                       dt,
+          pose.y + (velocity.velocity_x * std::sin(pose.yaw) +
+                    velocity.velocity_y * std::cos(pose.yaw)) *
+                       dt,
+          pose.yaw + velocity.raw * dt};
 }
 
 WheelVelocity Algorithm::calculateVelocityError(

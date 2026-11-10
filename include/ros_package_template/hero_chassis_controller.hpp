@@ -4,10 +4,13 @@
 #include <controller_interface/controller.h>
 #include <geometry_msgs/Twist.h>
 #include <hardware_interface/joint_command_interface.h>
+#include <nav_msgs/Odometry.h>
 #include <realtime_tools/realtime_buffer.h>
 #include <realtime_tools/realtime_publisher.h>
 #include <ros/node_handle.h>
 #include <std_msgs/Float64.h>
+#include <tf/transform_broadcaster.h>
+
 #include <memory>
 
 #include "ros_package_template/algorithm.hpp"
@@ -59,6 +62,8 @@ class HeroChassisController : public controller_interface::Controller<
 
   //! ROS topic subscriber.
   ros::Subscriber cmd_vel_subscriber_;
+  ros::Publisher odom_publisher_;
+  tf::TransformBroadcaster tf_broadcaster_;
   realtime_tools::RealtimeBuffer<geometry_msgs::Twist> cmd_vel_buffer_;
   std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>>
       target_left_front_wheel_velocity_publisher_;
@@ -78,6 +83,7 @@ class HeroChassisController : public controller_interface::Controller<
       current_right_back_wheel_velocity_publisher_;
   //! Algorithm computation object.
   Algorithm algorithm_;
+  ChassisPose pose_{0.0, 0.0, 0.0};
 };
 
 }  // namespace hero_chassis_controller

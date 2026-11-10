@@ -1,5 +1,6 @@
 #include "ros_package_template/hero_chassis_controller.hpp"
 
+#include <cmath>
 #include <pluginlib/class_list_macros.hpp>
 
 namespace hero_chassis_controller {
@@ -38,6 +39,7 @@ bool HeroChassisController::init(
   
   cmd_vel_subscriber_ = controller_nh.subscribe(
       "cmd_vel", 1, &HeroChassisController::cmdVelCallback, this);
+  odom_publisher_ = controller_nh.advertise<nav_msgs::Odometry>("/odom", 50);
   cmd_vel_buffer_.writeFromNonRT(geometry_msgs::Twist());
 
   target_left_front_wheel_velocity_publisher_.reset(
@@ -73,50 +75,75 @@ void HeroChassisController::starting(const ros::Time& /*time*/) {
   right_front_pid_.reset();
   left_back_pid_.reset();
   right_back_pid_.reset();
+  pose_ = {0.0, 0.0, 0.0};
 }
 
-void HeroChassisController::update(const ros::Time& /*time*/,
+void HeroChassisController::update(const ros::Time& time,
                                    const ros::Duration& period) {
-  const geometry_msgs::Twist chassis_velocity_command =
-      *cmd_vel_buffer_.readFromRT();
-  const ChassisVelocity chassis_velocity = {
-      chassis_velocity_command.linear.x, chassis_velocity_command.linear.y,
-      chassis_velocity_command.angular.z};
-  const WheelVelocity target_wheel_velocities =
-      algorithm_.calculateWheelVelocities(chassis_velocity);
-  const WheelVelocity current_wheel_velocities = {
+  const geometry_msgs::Twist cmd = *cmd_vel_buffer_.readFromRT();
+  const ChassisVelocity cmd_vel = {cmd.linear.x, cmd.linear.y, cmd.angular.z};
+  const WheelVelocity target = algorithm_.calculateWheelVelocities(cmd_vel);
+  const WheelVelocity current = {
       left_front_joint_.getVelocity(), right_front_joint_.getVelocity(),
       left_back_joint_.getVelocity(), right_back_joint_.getVelocity()};
-  const WheelVelocity velocity_errors =
-      algorithm_.calculateVelocityError(target_wheel_velocities,
-                                        current_wheel_velocities);
+  const WheelVelocity error =
+      algorithm_.calculateVelocityError(target, current);
 
   algorithm_.publishWheelVelocity(
       *target_left_front_wheel_velocity_publisher_,
       *current_left_front_wheel_velocity_publisher_,
-      target_wheel_velocities.left_front, current_wheel_velocities.left_front);
+      target.left_front, current.left_front);
   algorithm_.publishWheelVelocity(
       *target_right_front_wheel_velocity_publisher_,
       *current_right_front_wheel_velocity_publisher_,
-      target_wheel_velocities.right_front,
-      current_wheel_velocities.right_front);
+      target.right_front, current.right_front);
   algorithm_.publishWheelVelocity(
       *target_left_back_wheel_velocity_publisher_,
       *current_left_back_wheel_velocity_publisher_,
-      target_wheel_velocities.left_back, current_wheel_velocities.left_back);
+      target.left_back, current.left_back);
   algorithm_.publishWheelVelocity(
       *target_right_back_wheel_velocity_publisher_,
       *current_right_back_wheel_velocity_publisher_,
-      target_wheel_velocities.right_back, current_wheel_velocities.right_back);
+      target.right_back, current.right_back);
+
+  const ChassisVelocity velocity =
+      algorithm_.calculateChassisVelocity(current);
+  pose_ = algorithm_.calculateOdometry(velocity, pose_, period.toSec());
+
+  geometry_msgs::Quaternion orientation;
+  orientation.x = 0.0;
+  orientation.y = 0.0;
+  orientation.z = std::sin(pose_.yaw / 2.0);
+  orientation.w = std::cos(pose_.yaw / 2.0);
+
+  nav_msgs::Odometry odom;
+  odom.header.stamp = time;
+  odom.header.frame_id = "odom";
+  odom.child_frame_id = "base_link";
+  odom.pose.pose.position.x = pose_.x;
+  odom.pose.pose.position.y = pose_.y;
+  odom.pose.pose.orientation = orientation;
+  odom.twist.twist.linear.x = velocity.velocity_x;
+  odom.twist.twist.linear.y = velocity.velocity_y;
+  odom.twist.twist.angular.z = velocity.raw;
+  odom_publisher_.publish(odom);
+
+  tf::Transform transform;
+  transform.setOrigin(tf::Vector3(pose_.x, pose_.y, 0.0));
+  tf::Quaternion rotation;
+  rotation.setRPY(0.0, 0.0, pose_.yaw);
+  transform.setRotation(rotation);
+  tf_broadcaster_.sendTransform(
+      tf::StampedTransform(transform, time, "odom", "base_link"));
 
   left_front_joint_.setCommand(
-      left_front_pid_.computeCommand(velocity_errors.left_front, period));
+      left_front_pid_.computeCommand(error.left_front, period));
   right_front_joint_.setCommand(
-      right_front_pid_.computeCommand(velocity_errors.right_front, period));
+      right_front_pid_.computeCommand(error.right_front, period));
   left_back_joint_.setCommand(
-      left_back_pid_.computeCommand(velocity_errors.left_back, period));
+      left_back_pid_.computeCommand(error.left_back, period));
   right_back_joint_.setCommand(
-      right_back_pid_.computeCommand(velocity_errors.right_back, period));
+      right_back_pid_.computeCommand(error.right_back, period));
 }
 
 void HeroChassisController::stopping(const ros::Time& /*time*/) {
