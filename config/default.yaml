@@ -4,6 +4,8 @@ controller:
     wheel_r: 0.07625
     half_distance_x: 0.4
     half_distance_y: 0.4
+    use_global_velocity: false
+    global_frame: odom
 
     left_front_wheel_joint_pid:
       p: 10.0

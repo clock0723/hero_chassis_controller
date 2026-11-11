@@ -1,3 +1,4 @@
+// Copyright 2026 clock0723
 #pragma once
 
 #include <control_toolbox/pid.h>
@@ -10,18 +11,20 @@
 #include <ros/node_handle.h>
 #include <std_msgs/Float64.h>
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
 
 #include <memory>
+#include <string>
 
 #include "ros_package_template/algorithm.hpp"
 
-namespace hero_chassis_controller {
-
+namespace hero_chassis_controller
+{
 /*!
  * Main class for the node to handle the ROS interfacing.
  */
-class HeroChassisController : public controller_interface::Controller<
-                                  hardware_interface::EffortJointInterface> {
+class HeroChassisController : public controller_interface::Controller<hardware_interface::EffortJointInterface>
+{
  public:
   /*!
    * Constructor.
@@ -37,8 +40,8 @@ class HeroChassisController : public controller_interface::Controller<
    * Reads and verifies the ROS parameters.
    * @return true if successful.
    */
-  bool init(hardware_interface::EffortJointInterface* effort_joint_interface,
-            ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh) override;
+  bool init(hardware_interface::EffortJointInterface* effort_joint_interface, ros::NodeHandle& root_nh,
+            ros::NodeHandle& controller_nh) override;
   void starting(const ros::Time& time) override;
   void update(const ros::Time& time, const ros::Duration& period) override;
   void stopping(const ros::Time& time) override;
@@ -64,25 +67,20 @@ class HeroChassisController : public controller_interface::Controller<
   ros::Subscriber cmd_vel_subscriber_;
   ros::Publisher odom_publisher_;
   tf::TransformBroadcaster tf_broadcaster_;
+  tf::TransformListener tf_listener_;
   realtime_tools::RealtimeBuffer<geometry_msgs::Twist> cmd_vel_buffer_;
-  std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>>
-      target_left_front_wheel_velocity_publisher_;
-  std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>>
-      target_right_front_wheel_velocity_publisher_;
-  std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>>
-      target_left_back_wheel_velocity_publisher_;
-  std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>>
-      target_right_back_wheel_velocity_publisher_;
-  std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>>
-      current_left_front_wheel_velocity_publisher_;
-  std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>>
-      current_right_front_wheel_velocity_publisher_;
-  std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>>
-      current_left_back_wheel_velocity_publisher_;
-  std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>>
-      current_right_back_wheel_velocity_publisher_;
+  std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>> target_left_front_wheel_velocity_publisher_;
+  std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>> target_right_front_wheel_velocity_publisher_;
+  std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>> target_left_back_wheel_velocity_publisher_;
+  std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>> target_right_back_wheel_velocity_publisher_;
+  std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>> current_left_front_wheel_velocity_publisher_;
+  std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>> current_right_front_wheel_velocity_publisher_;
+  std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>> current_left_back_wheel_velocity_publisher_;
+  std::unique_ptr<realtime_tools::RealtimePublisher<std_msgs::Float64>> current_right_back_wheel_velocity_publisher_;
   //! Algorithm computation object.
   Algorithm algorithm_;
+  bool global_cmd_{false};
+  std::string frame_{"odom"};
   ChassisPose pose_{0.0, 0.0, 0.0};
 };
 

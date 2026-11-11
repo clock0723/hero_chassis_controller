@@ -1,23 +1,27 @@
+// Copyright 2026 clock0723
 #pragma once
 
 #include <realtime_tools/realtime_publisher.h>
 #include <std_msgs/Float64.h>
 
-namespace hero_chassis_controller {
-
-struct ChassisVelocity {
+namespace hero_chassis_controller
+{
+struct ChassisVelocity
+{
   double velocity_x;
   double velocity_y;
-  double raw;
+  double yaw_rate;
 };
 
-struct ChassisPose {
+struct ChassisPose
+{
   double x;
   double y;
   double yaw;
 };
 
-struct WheelVelocity {
+struct WheelVelocity
+{
   double left_front;
   double right_front;
   double left_back;
@@ -27,24 +31,18 @@ struct WheelVelocity {
 /*!
  * Class containing the algorithmic part of the package.
  */
-class Algorithm {
+class Algorithm
+{
  public:
-  void setWhellDate(double wheel_r, double half_distance_x,
-                    double half_distance_y);
-  WheelVelocity calculateWheelVelocities(
-      const ChassisVelocity& chassis_velocity) const;
-  ChassisVelocity calculateChassisVelocity(
-      const WheelVelocity& wheel_velocities) const;
-  ChassisPose calculateOdometry(const ChassisVelocity& velocity,
-                                const ChassisPose& pose, double dt) const;
-  WheelVelocity calculateVelocityError(
-      const WheelVelocity& target_velocity,
-      const WheelVelocity& current_velocity) const;
-  void publishWheelVelocity(
-      realtime_tools::RealtimePublisher<std_msgs::Float64>& target_publisher,
-      realtime_tools::RealtimePublisher<std_msgs::Float64>&
-          current_publisher,
-      double target_velocity, double current_velocity) const;
+  void setWheelData(double wheel_r, double half_distance_x, double half_distance_y);
+  WheelVelocity calculateWheelVelocities(const ChassisVelocity& chassis_velocity) const;
+  ChassisVelocity calculateChassisVelocity(const WheelVelocity& wheel_velocities) const;
+  ChassisPose calculateOdometry(const ChassisVelocity& velocity, const ChassisPose& pose, double dt) const;
+  WheelVelocity calculateVelocityError(const WheelVelocity& target_velocity,
+                                       const WheelVelocity& current_velocity) const;
+  void publishWheelVelocity(realtime_tools::RealtimePublisher<std_msgs::Float64>& target_publisher,
+                            realtime_tools::RealtimePublisher<std_msgs::Float64>& current_publisher,
+                            double target_velocity, double current_velocity) const;
 
  private:
   double wheel_r_{0.07625};
